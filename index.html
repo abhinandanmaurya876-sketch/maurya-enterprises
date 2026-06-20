@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maurya Enterprises – Building The Future</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+        .hidden { display: none !important; }
+        
+        #cart-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        #cart-overlay.active { opacity: 1; pointer-events: auto; }
+
+        #cart-panel { position: fixed; top: 0; right: -450px; width: 100%; max-width: 400px; height: 100vh; background: white; z-index: 1000; box-shadow: -5px 0 25px rgba(0,0,0,0.2); transition: right 0.35s ease-in-out; display: flex; flex-direction: column; }
+        #cart-panel.active { right: 0; }
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="header-container">
+            <div class="logo-area">
+                <img src="images/logo.png" alt="Maurya Logo" onerror="this.src='https://placehold.co/50x50?text=ME'">
+                <div class="brand-text">
+                    <h1>Maurya Enterprises</h1>
+                    <span>Building The Future</span>
+                </div>
+            </div>
+            
+            <div class="search-container">
+                <input type="text" id="global-search" placeholder="Search categories, subcategories, or products...">
+                <button type="button"><i class="fas fa-search"></i></button>
+                <div id="search-suggestions" class="suggestions-box"></div>
+            </div>
+
+            <div class="header-actions">
+                <button id="cart-toggle-btn" class="cart-btn">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span id="cart-count">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <section class="hero-section">
+        <div class="hero-content">
+            <img src="images/logo.png" alt="Maurya Logo" class="hero-logo" style="max-height: 80px; margin-bottom: 15px;" onerror="this.style.display='none'">
+            <h2>Building Materials & Hardware Store</h2>
+            <p>Construction Materials, Electricals, Hardware, Paints & More</p>
+            <a href="#shop-categories" class="cta-btn">Shop Now</a>
+        </div>
+    </section>
+
+    <main class="container">
+        
+        <section id="shop-categories" class="section-padding">
+            <h2 class="section-title">Shop By Category</h2>
+            <div class="category-grid" id="category-container">
+                </div>
+        </section>
+
+        <section id="products-section" class="section-padding hidden">
+            <div class="section-header-flex">
+                <h2 class="section-title" id="current-view-title">All Products</h2>
+                <button id="back-to-categories" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Categories</button>
+            </div>
+            <div id="subcategory-filter-bar" class="filter-bar"></div>
+            <div class="products-grid" id="products-container">
+                </div>
+        </section>
+
+    </main>
+
+    <div id="cart-panel" class="cart-sidebar">
+        <div class="cart-header">
+            <h3>Your Shopping Cart</h3>
+            <button id="cart-close-btn" class="close-btn">×</button>
+        </div>
+        <div id="cart-items-container" class="cart-body">
+            <p class="empty-msg">Your cart is empty.</p>
+        </div>
+        <div class="cart-footer">
+            <div class="summary-line"><span>Total Items:</span> <span id="total-items">0</span></div>
+            <div class="summary-line"><span>Total Amount:</span> <span id="total-amount">₹0</span></div>
+            
+            <form id="checkout-form" class="checkout-form">
+                <h4>Checkout Delivery Details</h4>
+                <input type="text" id="cust-name" placeholder="Enter Your Name" required>
+                <input type="tel" id="cust-phone" placeholder="Enter Mobile Number" required>
+                <textarea id="cust-address" placeholder="Full Delivery Address" rows="2" required></textarea>
+                <button type="submit" class="whatsapp-btn">
+                    <i class="fab fa-whatsapp"></i> Order via WhatsApp
+                </button>
+            </form>
+        </div>
+    </div>
+    <div id="cart-overlay" class="overlay"></div>
+
+    <section class="contact-section section-padding">
+        <div class="container contact-grid">
+            <div class="contact-info">
+                <h3>Maurya Enterprises</h3>
+                <p><i class="fas fa-map-marker-alt"></i> Chandauli, Uttar Pradesh, India</p>
+                <p><i class="fas fa-phone-alt"></i> +91 9369940723</p>
+                <p><i class="fas fa-envelope"></i> abhinandanmaurya876@gmail.com</p>
+                <a href="https://wa.me/9369940723" target="_blank" class="whatsapp-contact-btn">
+                    <i class="fab fa-whatsapp"></i> Chat With Us
+                </a>
+            </div>
+            <div class="map-container">
+                <iframe src="https://maps.google.com/maps?q=Chandauli,+Uttar+Pradesh,+India&output=embed" width="100%" height="300" style="border:0; border-radius: 8px;" allowfullscreen="" loading="lazy"></iframe>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container footer-grid">
+            <div class="footer-brand">
+                <h4>Maurya Enterprises</h4>
+                <p>Building The Future</p>
+            </div>
+            <div class="footer-links">
+                <h5>Quick Links</h5>
+                <ul>
+                    <li><a href="#">Home</a></li>
+                    <li><a href="#shop-categories">Categories</a></li>
+                </ul>
+            </div>
+            <div class="footer-contact">
+                <h5>Contact Support</h5>
+                <p>Chandauli, UP, India</p>
+                <a href="https://wa.me/9369940723" class="wa-footer-link"><i class="fab fa-whatsapp"></i> WhatsApp Support</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 Maurya Enterprises – Building The Future. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="app.js"></script>
+    
+
+</body>
+</html>
