@@ -1,298 +1,322 @@
-// Maurya Enterprises - Fully Integrated Firebase Production Configuration
+// आपकी असली Firebase Configuration
 const firebaseConfig = {
   apiKey: "AIzaSyCcfJ7lqOA95b1dqlrQETvAAPooifKAy1g",
   authDomain: "mauryaenterprises-84287.firebaseapp.com",
   projectId: "mauryaenterprises-84287",
   storageBucket: "mauryaenterprises-84287.firebasestorage.app",
-  messagingSenderId: "9369940723",
+  messagingSenderId: "763643637248",
   appId: "1:763643637248:web:3cbfe9ea8b68bebc4132e5",
   measurementId: "G-EK8B6BRLC3"
 };
 
-// Initialize Firebase Production Engine
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
+firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
-// Application State Engineering
-let localProducts = [];
 let cart = [];
-const WHATSAPP_NUMBER = "9369940723"; // 
+let allProducts = [];
+let currentCategory = "";
+const defaultImg = "https://placehold.co/300x200?text=Maurya+Enterprises";
 
-// Static Native Category Configuration (For Navigation Structure)
-const defaultCategories = [
-    { name: "Appliances", img: "https://placehold.co/300x200?text=Appliances" },
-    { name: "Electricals", img: "https://placehold.co/300x200?text=Electricals" },
-    { name: "Power & Hand Tools", img: "https://placehold.co/300x200?text=Power+Tools" },
-    { name: "Plywood & Laminates", img: "https://placehold.co/300x200?text=Plywood" },
-    { name: "Hardware", img: "https://placehold.co/300x200?text=Hardware" },
-    { name: "Paints", img: "https://placehold.co/300x200?text=Paints" },
-    { name: "Lighting & Fans", img: "https://placehold.co/300x200?text=Lighting" },
-    { name: "Bathroom", img: "https://placehold.co/300x200?text=Bathroom" },
-    { name: "Plumbing", img: "https://placehold.co/300x200?text=Plumbing" },
-    { name: "Kitchen", img: "https://placehold.co/300x200?text=Kitchen" },
-    { name: "Construction Materials", img: "https://placehold.co/300x200?text=Construction" }
-];
-
-// Document Lifecycle Activation
 document.addEventListener("DOMContentLoaded", () => {
-    initializeDOMEvents();
-    fetchProductsFromFirebase();
+    loadLiveDatabase();
+    setupCartEventListeners();
+    setupSearch();
+    document.getElementById("checkout-form").addEventListener("submit", handleCheckout);
 });
 
-function initializeDOMEvents() {
-    // Cart Slide Engine
-    document.getElementById("cart-toggle-btn").addEventListener("click", () => toggleCart(true));
-    document.getElementById("cart-close-btn").addEventListener("click", () => toggleCart(false));
-    document.getElementById("cart-overlay").addEventListener("click", () => toggleCart(false));
-    
-    // UI Navigation Navigation back home
-    document.getElementById("back-to-categories").addEventListener("click", () => {
-        document.getElementById("products-section").classList.add("hidden");
-        document.getElementById("shop-categories").classList.remove("hidden");
-    });
-
-    // Real-time Contextual Search Module Engine
-    const searchBar = document.getElementById("global-search");
-    searchBar.addEventListener("input", (e) => executeRealtimeSearch(e.target.value.trim()));
-
-    // Submit Checkout Trigger Architecture
-    document.getElementById("checkout-form").addEventListener("submit", handleCheckoutProcess);
-}
-
-// Data Pipeline Core - Syncing Data from Cloud Firestore
-function fetchProductsFromFirebase() {
+// 1. डेटाबेस से रीयल-टाइम डेटा लोड करना
+function loadLiveDatabase() {
     db.collection("products").onSnapshot((snapshot) => {
-        localProducts = [];
+        allProducts = [];
         snapshot.forEach((doc) => {
-            localProducts.push({ id: doc.id, ...doc.data() });
+            allProducts.push({ id: doc.id, ...doc.data() });
         });
-        renderCategories();
-    }, (error) => {
-        console.error("Firebase fetch error:", error);
-        renderCategories(); 
+        // शुरुआत में मुख्य कैटेगरीज दिखाएं
+        renderMainCategories();
     });
 }
 
-function renderCategories() {
+// 2. लेवल 1: मुख्य कैटेगरीज को फोटो के साथ रेंडर करना
+function renderMainCategories() {
+    // अपनी HTML फाइलों के हिसाब से सेक्शन्स को छुपाना/दिखाना
+    document.getElementById("shop-categories").classList.remove("hidden");
+    if(document.getElementById("products-section")) {
+        document.getElementById("products-section").classList.add("hidden");
+    }
+    
+    // सब-कैटेगरी के लिए अगर कोई अलग सेक्शन बनाया हो तो उसे यहाँ हैंडल कर सकते हैं
+    const subcatSection = document.getElementById("subcategories-section");
+    if(subcatSection) subcatSection.classList.add("hidden");
+
     const container = document.getElementById("category-container");
     container.innerHTML = "";
     
-    defaultCategories.forEach(cat => {
-        const card = document.createElement("div");
-        card.className = "category-card";
-        card.innerHTML = `
-            <img src="${cat.img}" alt="${cat.name}">
-            <h3>${cat.name}</h3>
-        `;
-        card.addEventListener("click", () => enterCategoryView(cat.name));
-        container.appendChild(card);
-    });
-}
-
-function enterCategoryView(categoryName) {
-    document.getElementById("shop-categories").classList.add("hidden");
-    document.getElementById("products-section").classList.remove("hidden");
-    document.getElementById("current-view-title").innerText = categoryName;
-
-    const filteredProducts = localProducts.filter(p => p.mainCategory && p.mainCategory.toLowerCase() === categoryName.toLowerCase());
-    const subCats = [...new Set(filteredProducts.map(p => p.subCategory))];
-
-    renderSubcategoryFilters(subCats, categoryName);
-    renderProductsGrid(filteredProducts);
-}
-
-function renderSubcategoryFilters(subCats, mainCat) {
-    const filterBar = document.getElementById("subcategory-filter-bar");
-    filterBar.innerHTML = `<button class="filter-pill active" onclick="filterBySubCat('all', '${mainCat}')">All</button>`;
-    
-    subCats.forEach(sub => {
-        if(sub) {
-            filterBar.innerHTML += `<button class="filter-pill" onclick="filterBySubCat('${sub}', '${mainCat}')">${sub}</button>`;
+    // यूनिक कैटेगरीज और उनकी फोटो निकालना
+    const uniqueCats = {};
+    allProducts.forEach(p => {
+        if(p.category && !uniqueCats[p.category]) {
+            uniqueCats[p.category] = p.categoryImg || defaultImg;
         }
     });
-}
 
-window.filterBySubCat = function(subCat, mainCat) {
-    document.querySelectorAll(".filter-pill").forEach(el => el.classList.remove("active"));
-    if(event) event.target.classList.add("active");
-
-    let products = localProducts.filter(p => p.mainCategory && p.mainCategory.toLowerCase() === mainCat.toLowerCase());
-    if (subCat !== 'all') {
-        products = products.filter(p => p.subCategory === subCat);
-    }
-    renderProductsGrid(products);
-};
-
-function renderProductsGrid(products) {
-    const container = document.getElementById("products-container");
-    container.innerHTML = "";
-
-    if(products.length === 0) {
-        container.innerHTML = "<p class='no-products' style='padding:20px; color:gray;'>No products found live in this category. Add some in your Firebase 'products' collection!</p>";
+    const keys = Object.keys(uniqueCats);
+    if(keys.length === 0) {
+        container.innerHTML = "<p style='grid-column:1/-1; text-align:center; padding:20px;'>No active categories found. Add products from Admin Panel.</p>";
         return;
     }
 
-    products.forEach(prod => {
+    keys.forEach(catName => {
+        const catCard = document.createElement("div");
+        catCard.className = "category-card";
+        catCard.style = "border: 1px solid #ddd; border-radius: 8px; overflow: hidden; cursor: pointer; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: 0.2s;";
+        
+        catCard.innerHTML = `
+            <img src="${uniqueCats[catName]}" alt="${catName}" style="width:100%; height:160px; object-fit:cover;">
+            <div style="padding: 15px; text-align: center;">
+                <h3 style="margin:0 0 5px 0; color:#333; font-size:16px;">${catName}</h3>
+                <span style="color:#ff9900; font-weight:600; font-size:14px;">Explore →</span>
+            </div>
+        `;
+        catCard.onclick = () => showSubcategories(catName);
+        container.appendChild(catCard);
+    });
+}
+
+// 3. लेवल 2: चुनी गई कैटेगरी की सब-कैटेगरीज को फोटो के साथ दिखाना
+function showSubcategories(categoryName) {
+    currentCategory = categoryName;
+    
+    // मुख्य कैटेगरी ग्रिड को खाली करके उसमें सब-कैटेगरीज लोड करना (या अगर अलग सेक्शन है तो वहाँ दिखा सकते हैं)
+    const container = document.getElementById("category-container");
+    container.innerHTML = "";
+    
+    // ब्रेडक्रम्ब या टाइटल बदलने के लिए (अगर HTML में एलिमेंट हो)
+    const titleEl = document.getElementById("current-view-title");
+    if(titleEl) titleEl.innerText = categoryName;
+
+    // इस कैटेगरी के अंदर की यूनिक सब-कैटेगरीज ढूँढना
+    const filteredProducts = allProducts.filter(p => p.category === categoryName);
+    const uniqueSubs = {};
+    filteredProducts.forEach(p => {
+        if(p.subcategory && !uniqueSubs[p.subcategory]) {
+            uniqueSubs[p.subcategory] = p.subcategoryImg || defaultImg;
+        }
+    });
+
+    const keys = Object.keys(uniqueSubs);
+    
+    // बैक बटन बनाना ताकि ग्राहक वापस जा सके
+    const backBtn = document.createElement("div");
+    backBtn.style = "grid-column: 1/-1; margin-bottom: 10px;";
+    backBtn.innerHTML = `<button onclick="renderMainCategories()" style="background:#666; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer; font-weight:bold;"><i class="fas fa-arrow-left"></i> Back to Main Categories</button>`;
+    container.appendChild(backBtn);
+
+    if(keys.length === 0) {
+        const msg = document.createElement("p");
+        msg.innerText = "No subcategories found here.";
+        container.appendChild(msg);
+        return;
+    }
+
+    keys.forEach(subName => {
+        const subCard = document.createElement("div");
+        subCard.className = "subcategory-card";
+        subCard.style = "border: 1px solid #eee; border-radius: 8px; overflow: hidden; cursor: pointer; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05);";
+        
+        subCard.innerHTML = `
+            <img src="${uniqueSubs[subName]}" alt="${subName}" style="width:100%; height:150px; object-fit:cover;">
+            <div style="padding: 12px; text-align: center;">
+                <h4 style="margin:0 0 5px 0; color:#444; font-size:15px;">${subName}</h4>
+            </div>
+        `;
+        subCard.onclick = () => showProductsForSubcategory(subName);
+        container.appendChild(subCard);
+    });
+}
+
+// 4. लेवल 3: सब-कैटेगरी पर क्लिक करने पर फाइनल प्रोडक्ट्स लिस्ट दिखाना
+function showProductsForSubcategory(subcategoryName) {
+    document.getElementById("shop-categories").classList.add("hidden");
+    
+    const prodSection = document.getElementById("products-section");
+    if(prodSection) prodSection.classList.remove("hidden");
+    
+    const titleEl = document.getElementById("current-view-title");
+    if(titleEl) titleEl.innerText = `${currentCategory} > ${subcategoryName}`;
+
+    const container = document.getElementById("products-container");
+    container.innerHTML = "";
+
+    // फ़िल्टर किए गए प्रोडक्ट्स
+    const filtered = allProducts.filter(p => p.category === currentCategory && p.subcategory === subcategoryName);
+    
+    filtered.forEach(p => {
         const pCard = document.createElement("div");
         pCard.className = "product-card";
+        pCard.style = "border: 1px solid #eee; padding: 15px; border-radius: 8px; background:#fff; box-shadow: 0 2px 8px rgba(0,0,0,0.04);";
+        
+        const sizeInfo = (p.length && p.length !== "N/A") ? `Size: ${p.length} x ${p.height}` : `Standard Size`;
+        const stockStatus = p.quantity > 0 ? `In Stock (${p.quantity} pcs)` : `Out of Stock`;
+        const btnDisabled = p.quantity > 0 ? "" : "disabled style='background:#ccc; cursor:not-allowed;'";
+
         pCard.innerHTML = `
-            <div>
-                <img src="${prod.image || 'https://placehold.co/200?text=Hardware'}" alt="${prod.name}">
-                <span class="product-badge">${prod.mainCategory || ''} > ${prod.subCategory || ''}</span>
-                <h4>${prod.name}</h4>
-            </div>
-            <div>
-                <p class="product-price">₹${prod.price}</p>
-                <div class="qty-selector">
-                    <button onclick="adjustLocalQty('${prod.id}', -1)">-</button>
-                    <span id="qty-${prod.id}">1</span>
-                    <button onclick="adjustLocalQty('${prod.id}', 1)">+</button>
-                </div>
-                <button class="add-to-cart-btn" onclick="commitToCart('${prod.id}')">Add to Cart</button>
-            </div>
+            <img src="${p.imageUrl || defaultImg}" alt="${p.name}" style="width:100%; height:150px; object-fit:cover; border-radius:4px;">
+            <h4 style="margin:10px 0 5px 0; font-size:16px; color:#222;">${p.name}</h4>
+            <p style="color:#666; font-size:13px; margin:2px 0;">${sizeInfo}</p>
+            <p style="font-size:12px; font-weight:bold; color:${p.quantity > 0 ? 'green':'red'}; margin:2px 0;">${stockStatus}</p>
+            <p style="font-weight:bold; color:#ff9900; margin:5px 0; font-size:18px;">₹${p.price}</p>
+            <button onclick="addToCart('${p.id}')" ${btnDisabled} style="background:#ff9900; color:#000; border:none; padding:8px 12px; border-radius:4px; cursor:pointer; width:100%; font-weight:bold;">Add To Cart</button>
         `;
         container.appendChild(pCard);
     });
 }
 
-window.adjustLocalQty = function(id, delta) {
-    const el = document.getElementById(`qty-${id}`);
-    let current = parseInt(el.innerText);
-    current = Math.max(1, current + delta);
-    el.innerText = current;
-};
+// बैक बटन लॉजिक जो प्रोडक्ट्स व्यू से वापस सब-कैटेगरीज पर ले जाएगा
+const backToCatsBtn = document.getElementById("back-to-categories");
+if(backToCatsBtn) {
+    backToCatsBtn.onclick = () => {
+        document.getElementById("shop-categories").classList.remove("hidden");
+        document.getElementById("products-section").classList.add("hidden");
+        showSubcategories(currentCategory);
+    };
+}
 
-function executeRealtimeSearch(query) {
-    const suggestions = document.getElementById("search-suggestions");
-    if (!query) {
-        suggestions.innerHTML = "";
-        return;
+// 5. कार्ट मैनेजमेंट सिस्टम (Cart Handling)
+function setupCartEventListeners() {
+    const panel = document.getElementById("cart-panel");
+    const overlay = document.getElementById("cart-overlay");
+    
+    if(document.getElementById("cart-toggle-btn")) {
+        document.getElementById("cart-toggle-btn").onclick = () => { panel.classList.add("active"); if(overlay) overlay.classList.add("active"); };
     }
-
-    const matches = localProducts.filter(p => 
-        (p.name && p.name.toLowerCase().includes(query.toLowerCase())) ||
-        (p.mainCategory && p.mainCategory.toLowerCase().includes(query.toLowerCase())) ||
-        (p.subCategory && p.subCategory.toLowerCase().includes(query.toLowerCase()))
-    );
-
-    suggestions.innerHTML = "";
-    const distinctMatches = matches.slice(0, 6);
-
-    distinctMatches.forEach(item => {
-        const div = document.createElement("div");
-        div.className = "suggestion-item";
-        div.innerText = `${item.name} (${item.mainCategory})`;
-        div.addEventListener("click", () => {
-            suggestions.innerHTML = "";
-            enterCategoryView(item.mainCategory);
-            renderProductsGrid([item]);
-        });
-        suggestions.appendChild(div);
-    });
+    if(document.getElementById("cart-close-btn")) {
+        document.getElementById("cart-close-btn").onclick = () => { panel.classList.remove("active"); if(overlay) overlay.classList.remove("active"); };
+    }
+    if(overlay) {
+        overlay.onclick = () => { panel.classList.remove("active"); overlay.classList.remove("active"); };
+    }
 }
 
-function toggleCart(open) {
-    document.getElementById("cart-panel").classList.toggle("active", open);
-    document.getElementById("cart-overlay").classList.toggle("active", open);
-}
+function addToCart(productId) {
+    const prod = allProducts.find(p => p.id === productId);
+    if(!prod || prod.quantity <= 0) return;
 
-window.commitToCart = function(prodId) {
-    const product = localProducts.find(p => p.id === prodId);
-    const qtySelected = parseInt(document.getElementById(`qty-${prodId}`).innerText);
-
-    const existing = cart.find(item => item.id === prodId);
+    const existing = cart.find(item => item.id === productId);
     if(existing) {
-        existing.qty += qtySelected;
+        if(existing.qty < prod.quantity) {
+            existing.qty++;
+        } else {
+            alert("Maximum available stock reached for this item!");
+            return;
+        }
     } else {
-        cart.push({ ...product, qty: qtySelected });
+        cart.push({ ...prod, qty: 1 });
     }
     updateCartUI();
-    toggleCart(true);
-};
+}
 
 function updateCartUI() {
     const container = document.getElementById("cart-items-container");
+    if(!container) return;
     container.innerHTML = "";
-
+    
     let totalItems = 0;
     let totalAmount = 0;
 
     if(cart.length === 0) {
-        container.innerHTML = "<p class='empty-msg'>Your cart is empty.</p>";
+        container.innerHTML = '<p class="empty-msg">Your cart is empty.</p>';
     } else {
-        cart.forEach((item, index) => {
+        cart.forEach(item => {
             totalItems += item.qty;
             totalAmount += (item.price * item.qty);
+            const sizeLabel = (item.length && item.length !== "N/A") ? ` (${item.length}x${item.height})` : "";
 
             const div = document.createElement("div");
-            div.className = "cart-item-row";
-            div.style = "display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;";
+            div.style = "display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #eee; padding-bottom:10px;";
             div.innerHTML = `
                 <div>
-                    <h5 style='font-size:0.95rem;'>${item.name}</h5>
-                    <p style='font-size:0.85rem; color:gray;'>₹${item.price} x ${item.qty}</p>
+                    <h5 style="margin:0; font-size:14px;">${item.name}${sizeLabel}</h5>
+                    <small style="color:#555;">₹${item.price} x ${item.qty}</small>
                 </div>
-                <div>
-                    <button onclick="mutateCartQty(${index}, -1)" style='padding:2px 6px;'>-</button>
-                    <button onclick="mutateCartQty(${index}, 1)" style='padding:2px 6px; margin-right:8px;'>+</button>
-                    <button onclick="removeFromCart(${index})" style='color:red; background:none; border:none; cursor:pointer;'><i class="fas fa-trash"></i></button>
-                </div>
+                <button onclick="removeFromCart('${item.id}')" style="background:none; border:none; color:red; cursor:pointer;"><i class="fas fa-trash"></i></button>
             `;
             container.appendChild(div);
         });
     }
-
-    document.getElementById("cart-count").innerText = totalItems;
-    document.getElementById("total-items").innerText = totalItems;
-    document.getElementById("total-amount").innerText = "₹" + totalAmount;
+    
+    if(document.getElementById("cart-count")) document.getElementById("cart-count").innerText = totalItems;
+    if(document.getElementById("total-items")) document.getElementById("total-items").innerText = totalItems;
+    if(document.getElementById("total-amount")) document.getElementById("total-amount").innerText = "₹" + totalAmount;
 }
 
-window.mutateCartQty = function(index, delta) {
-    cart[index].qty += delta;
-    if(cart[index].qty <= 0) {
-        cart.splice(index, 1);
-    }
+function removeFromCart(id) {
+    cart = cart.filter(item => item.id !== id);
     updateCartUI();
-};
+}
 
-window.removeFromCart = function(index) {
-    cart.splice(index, 1);
-    updateCartUI();
-};
-
-function handleCheckoutProcess(e) {
+// 6. व्हाट्सएप आर्डर प्लेसमेंट (साइज़ डिटेल्स के साथ)
+function handleCheckout(e) {
     e.preventDefault();
-    if(cart.length === 0) {
-        alert("Your cart is empty!");
-        return;
-    }
+    if(cart.length === 0) { alert("Your cart is empty!"); return; }
 
     const name = document.getElementById("cust-name").value;
     const phone = document.getElementById("cust-phone").value;
     const address = document.getElementById("cust-address").value;
 
-    let productLines = "";
-    let totalItems = 0;
-    let totalAmount = 0;
-
-    cart.forEach((item, i) => {
-        productLines += `${i + 1}. ${item.name} (Qty: ${item.qty}) - ₹${item.price * item.qty}\n`;
-        totalItems += item.qty;
-        totalAmount += (item.price * item.qty);
+    let orderList = "";
+    let total = 0;
+    cart.forEach((item, index) => {
+        const sizeDetails = (item.length && item.length !== "N/A") ? ` [Size: ${item.length}x${item.height}]` : "";
+        orderList += `${index + 1}. ${item.name}${sizeDetails} (Qty: ${item.qty}) - ₹${item.price * item.qty}\n`;
+        total += (item.price * item.qty);
     });
 
-    const message = `*Maurya Enterprises Order*\n\n` +
-                    `*Name:* ${name}\n` +
-                    `*Mobile:* ${phone}\n` +
-                    `*Address:* ${address}\n\n` +
-                    `*Products:*\n${productLines}\n` +
-                    `*Total Items:* ${totalItems}\n` +
-                    `*Total Amount:* ₹${totalAmount}`;
+    const textMessage = encodeURIComponent(
+`*NEW ORDER - MAURYA ENTERPRISES*
+---------------------------------------
+*Customer Details:*
+Name: ${name}
+Phone: ${phone}
+Address: ${address}
 
-    const encodedMessage = encodeURIComponent(message);
-    const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
+*Items Ordered:*
+${orderList}
+---------------------------------------
+*Total Amount:* ₹${total}
+---------------------------------------
+Please confirm the order.`
+    );
+
+    const whatsappNumber = "9369940723"; 
+    window.open(`https://wa.me/${whatsappNumber}?text=${textMessage}`, '_blank');
+}
+
+// 7. ग्लोबल सर्च बॉक्स सिस्टम
+function setupSearch() {
+    const searchInput = document.getElementById("global-search");
+    if(!searchInput) return;
     
-    window.open(whatsappUrl, '_blank');
+    searchInput.addEventListener("input", (e) => {
+        const val = e.target.value.toLowerCase();
+        const suggBox = document.getElementById("search-suggestions");
+        if(!suggBox) return;
+        
+        if(!val) { suggBox.innerHTML = ""; return; }
+        
+        const matches = allProducts.filter(p => p.name.toLowerCase().includes(val) || (p.category && p.category.toLowerCase().includes(val)));
+        suggBox.innerHTML = "";
+        
+        matches.slice(0, 5).forEach(m => {
+            const d = document.createElement("div");
+            d.style = "padding:8px; cursor:pointer; border-bottom:1px solid #eee; font-size:13px; background:#fff;";
+            d.innerText = `${m.name} (${m.subcategory})`;
+            d.onclick = () => {
+                currentCategory = m.category;
+                showProductsForSubcategory(m.subcategory);
+                searchInput.value = m.name;
+                suggBox.innerHTML = "";
+            };
+            suggBox.appendChild(d);
+        });
+    });
 }
