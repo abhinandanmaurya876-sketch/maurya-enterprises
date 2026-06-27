@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maurya Enterprises – Building The Future</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .hidden { display: none !important; }
+        #cart-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 1400; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        #cart-overlay.active { opacity: 1; pointer-events: auto; }
+        #cart-panel { position: fixed; top: 0; right: -450px; width: 100%; max-width: 420px; height: 100vh; background: white; z-index: 1500; box-shadow: -5px 0 25px rgba(0,0,0,0.2); transition: right 0.35s ease-in-out; display: flex; flex-direction: column; }
+        #cart-panel.active { right: 0 !important; }
+        .stock-alert { color: #ef4444; font-weight: 700; font-size: 13px; margin-top: 5px; display: block; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        @media(max-width: 768px) {
+            #cart-panel { max-width: 100%; right: -100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="header-container">
+            <div class="logo-area">
+                <img src="images/logo.png" alt="Maurya Logo" onerror="this.src='https://placehold.co/50x50?text=ME'">
+                <div class="brand-text">
+                    <h1>Maurya Enterprises</h1>
+                    <span>Building The Future</span>
+                </div>
+            </div>
+            
+            <div class="search-container">
+                <input type="text" id="global-search" placeholder="Search products, brands, categories...">
+                <button type="button"><i class="fas fa-search"></i></button>
+                <div id="search-suggestions" class="suggestions-box"></div>
+            </div>
+
+            <div class="header-actions">
+                <button id="cart-toggle-btn" class="cart-btn">
+                    <i class="fas fa-shopping-cart"></i> Cart
+                    <span id="cart-count">0</span>
+                </button>
+                <a href="admin.html" style="margin-left: 10px; text-decoration: none; font-size: 14px; color: var(--secondary-blue); font-weight: 600;"><i class="fas fa-user-cog"></i> Admin</a>
+            </div>
+        </div>
+    </header>
+
+    <section class="hero-section">
+        <div class="hero-content">
+            <h2>Building Materials & Hardware Store</h2>
+            <p>Construction Materials, Electricals, Hardware, Paints & More</p>
+            <a href="#shop-categories" class="cta-btn">Shop Now</a>
+        </div>
+    </section>
+
+    <main class="container">
+        <section id="shop-categories" class="section-padding">
+            <h2 class="section-title">Shop By Category</h2>
+            <div class="category-grid" id="category-container"></div>
+        </section>
+
+        <section id="products-section" class="section-padding hidden">
+            <div class="section-header-flex">
+                <h2 class="section-title" id="current-view-title">All Products</h2>
+                <button id="back-to-categories" class="back-btn"><i class="fas fa-arrow-left"></i> Back</button>
+            </div>
+            <div id="subcategory-filter-bar" class="filter-bar"></div>
+            <div class="products-grid" id="products-container"></div>
+        </section>
+    </main>
+
+    <div id="cart-panel">
+        <div class="cart-header" style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #e2e8f0;">
+            <h3 style="margin: 0; font-size: 18px;">Your Shopping Cart</h3>
+            <button id="cart-close-btn" style="font-size: 30px; cursor: pointer; background: none; border: none; color: #334155;">&times;</button>
+        </div>
+        
+        <div id="cart-items-container" style="flex: 1; overflow-y: auto; padding: 15px;">
+            <p class="empty-msg">Your cart is empty.</p>
+        </div>
+        
+        <div class="cart-footer" style="padding: 15px; border-top: 1px solid #e2e8f0; background: #f8fafc; position: sticky; bottom: 0;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span>Total Items:</span> <span id="total-items" style="font-weight:700;">0</span></div>
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span>Total Amount:</span> <span id="total-amount" style="font-weight:700; color:var(--primary-blue);">₹0</span></div>
+            
+            <form id="checkout-form">
+                <input type="text" id="cust-name" placeholder="Enter Your Name" style="width:100%; margin-bottom:8px; padding:10px; border:1px solid #cbd5e1; border-radius:6px;" required>
+                <input type="tel" id="cust-phone" placeholder="Enter Mobile Number" style="width:100%; margin-bottom:8px; padding:10px; border:1px solid #cbd5e1; border-radius:6px;" required>
+                <textarea id="cust-address" placeholder="Full Delivery Address" rows="2" style="width:100%; margin-bottom:8px; padding:10px; border:1px solid #cbd5e1; border-radius:6px;" required></textarea>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" id="cart-cancel-btn" style="flex: 1; border: 1px solid #ef4444; color: #ef4444; background: white; padding: 12px; border-radius: 6px; cursor: pointer; font-weight:600;">Cancel</button>
+                    <button type="submit" style="flex: 2; background: #22c55e; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="fab fa-whatsapp" style="font-size:18px;"></i> Order on WhatsApp
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="cart-overlay"></div>
+
+    <section class="contact-section section-padding">
+        <div class="container contact-grid">
+            <div class="contact-info">
+                <h3>Maurya Enterprises</h3>
+                <p><i class="fas fa-map-marker-alt"></i> Chandauli, Uttar Pradesh, India</p>
+                <p><i class="fas fa-phone-alt"></i> +91 9369940723</p>
+                <p><i class="fas fa-envelope"></i> abhinandanmaurya876@gmail.com</p>
+                <a href="https://wa.me/9369940723" target="_blank" class="whatsapp-contact-btn">
+                    <i class="fab fa-whatsapp"></i> Chat With Us
+                </a>
+            </div>
+            <div class="map-container">
+                <iframe src="https://maps.google.com/maps?q=Chandauli&t=&z=13&ie=UTF8&iwloc=&output=embed" width="100%" height="300" style="border:0; border-radius: 8px;" allowfullscreen="" loading="lazy"></iframe>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container footer-grid">
+            <div class="footer-brand">
+                <h4>Maurya Enterprises</h4>
+                <p>Building The Future</p>
+            </div>
+            <div class="footer-links">
+                <h5>Quick Links</h5>
+                <ul>
+                    <li><a href="#">Home</a></li>
+                    <li><a href="#shop-categories">Categories</a></li>
+                </ul>
+            </div>
+            <div class="footer-contact">
+                <h5>Contact Support</h5>
+                <p>Chandauli, UP, India</p>
+                <a href="https://wa.me/9369940723" class="wa-footer-link"><i class="fab fa-whatsapp"></i> WhatsApp Support</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© 2026 Maurya Enterprises – Building The Future. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

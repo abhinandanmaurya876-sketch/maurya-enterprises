@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Admin Center - Maurya Enterprises</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-container { padding: 30px 0; background: #f8fafc; min-height: 100vh; }
+        .admin-card { background: white; border-radius: 12px; padding: 25px; box-shadow: var(--shadow-premium); margin-bottom: 25px; border: 1px solid #e2e8f0; }
+        .admin-btn { background: var(--primary-blue); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; }
+        .admin-btn.danger { background: #ef4444; }
+        .admin-btn.success { background: #22c55e; }
+        .form-group { margin-bottom: 15px; display: flex; flex-direction: column; }
+        .form-group label { font-weight: 600; font-size: 14px; margin-bottom: 6px; color: #334155; }
+        .form-group input, .form-group select { padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; outline: none; font-size: 14px; }
+        .bread-crumb { display: flex; gap: 8px; align-items: center; font-size: 14px; font-weight: 600; margin-bottom: 25px; color: #64748b; background: white; padding: 12px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .bread-crumb span { color: var(--primary-blue); cursor: pointer; }
+        .grid-actions { display: flex; gap: 8px; padding: 10px; justify-content: center; background: #f8fafc; border-top: 1px solid #e2e8f0; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <header class="main-header">
+        <div class="header-container">
+            <div class="logo-area">
+                <div class="brand-text">
+                    <h1>Maurya Enterprises</h1>
+                    <span>Store Management Panel</span>
+                </div>
+            </div>
+            <a href="index.html" class="back-btn"><i class="fas fa-eye"></i> View Website</a>
+        </div>
+    </header>
+
+    <div class="admin-container">
+        <div class="container">
+            
+            <!-- ब्रेडक्रंब पाथ ट्रैकर -->
+            <div class="bread-crumb">
+                <span onclick="navToRoot()"><i class="fas fa-home"></i> Root Store</span> <i class="fas fa-chevron-right" style="font-size:10px;"></i>
+                <span id="crumb-cat" class="hidden" onclick="navToCat()">Category</span> <i id="icon-cat" class="fas fa-chevron-right hidden" style="font-size:10px;"></i>
+                <span id="crumb-sub" class="hidden">Subcategory</span>
+            </div>
+
+            <!-- लेवल 1: मुख्य कैटेगरीज मैनेजमेंट -->
+            <div id="view-level-categories">
+                <div class="admin-card">
+                    <h3 style="margin-top:0; margin-bottom:15px;"><i class="fas fa-folder-plus"></i> Create / Edit Main Category</h3>
+                    <form id="form-add-category" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+                        <input type="hidden" id="edit-cat-id">
+                        <div class="form-group" style="flex: 2; min-width: 200px;">
+                            <label>Category Name</label>
+                            <input type="text" id="new-cat-name" placeholder="e.g., Electricals, Paints" required>
+                        </div>
+                        <div class="form-group" style="flex: 2; min-width: 200px;">
+                            <label>Category Image URL</label>
+                            <input type="url" id="new-cat-image" placeholder="https://example.com/image.jpg" required>
+                        </div>
+                        <button type="submit" id="btn-submit-cat" class="admin-btn success" style="height:42px;">Save Category</button>
+                    </form>
+                </div>
+                <h2 class="section-title">Store Main Categories (Click to Manage Inside)</h2>
+                <div class="category-grid" id="admin-categories-list"></div>
+            </div>
+
+            <!-- लेवल 2: सब-कैटेगरीज मैनेजमेंट -->
+            <div id="view-level-subcategories" class="hidden">
+                <div class="admin-card">
+                    <h3 style="margin-top:0; margin-bottom:15px;"><i class="fas fa-tags"></i> Create Subcategory under <span id="parent-cat-display" style="color:var(--secondary-blue);"></span></h3>
+                    <form id="form-add-subcategory" style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+                        <input type="hidden" id="edit-sub-id">
+                        <div class="form-group" style="flex: 2; min-width: 200px;">
+                            <label>Subcategory Name</label>
+                            <input type="text" id="new-sub-name" placeholder="e.g., LED Bulbs, Wires" required>
+                        </div>
+                        <div class="form-group" style="flex: 2; min-width: 200px;">
+                            <label>Subcategory Image URL</label>
+                            <input type="url" id="new-sub-image" placeholder="https://example.com/sub.jpg" required>
+                        </div>
+                        <button type="submit" id="btn-submit-sub" class="admin-btn success" style="height:42px;">Save Subcategory</button>
+                    </form>
+                </div>
+                <h2 class="section-title">Subcategories inside <span id="parent-cat-title"></span></h2>
+                <div class="category-grid" id="admin-subcategories-list"></div>
+            </div>
+
+            <!-- लेवल 3: प्रोडक्ट्स मैनेजमेंट विद 6 स्मार्ट फील्ड्स -->
+            <div id="view-level-products" class="hidden">
+                <div class="admin-card">
+                    <h3 style="margin-top:0; margin-bottom:5px;"><i class="fas fa-box-open"></i> Add / Edit Product inside <span id="final-sub-display" style="color:var(--secondary-blue);"></span></h3>
+                    <p style="font-size:12px; color:#64748b; margin-bottom:20px;">Category mapping is fully automated!</p>
+                    
+                    <form id="form-add-product">
+                        <input type="hidden" id="edit-prod-id">
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;">
+                            <div class="form-group">
+                                <label>Product Name</label>
+                                <input type="text" id="prod-name" placeholder="e.g., Syska 9W LED Bulb" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Brand Name</label>
+                                <input type="text" id="prod-brand" placeholder="e.g., Syska, Finolex" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Product Unit / Type</label>
+                                <select id="prod-unit" required>
+                                    <option value="Pcs">Pcs (Piece)</option>
+                                    <option value="Kg">Kg (Kilogram)</option>
+                                    <option value="Bag">Bag</option>
+                                    <option value="Litre">Litre</option>
+                                    <option value="Packet">Packet</option>
+                                    <option value="Meter">Meter</option>
+                                    <option value="Bundle">Bundle</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>MRP (~~कटी हुई कीमत~~)</label>
+                                <input type="number" id="prod-mrp" placeholder="e.g., 150" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Selling Price (असली दाम)</label>
+                                <input type="number" id="prod-price" placeholder="e.g., 120" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Total Stock Qty</label>
+                                <input type="number" id="prod-stock" placeholder="e.g., 50 (Red Alert under 5)" required>
+                            </div>
+                            <div class="form-group" style="grid-column: 1 / -1;">
+                                <label>Product Image URL</label>
+                                <input type="url" id="prod-image" placeholder="https://example.com/product-pic.jpg" required>
+                            </div>
+                        </div>
+                        <div style="text-align: right; margin-top: 20px;">
+                            <button type="submit" id="btn-submit-prod" class="admin-btn success" style="padding: 10px 25px;">Save Product Details</button>
+                        </div>
+                    </form>
+                </div>
+
+                <h2 class="section-title">Products under <span id="final-sub-title"></span></h2>
+                <div class="products-grid" id="admin-products-list"></div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>
